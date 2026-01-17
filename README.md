@@ -1,2 +1,2 @@
 # minne
-Fake buckets like a baws
+An api to create apis that store or otherwise deals files.
