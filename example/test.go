@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -26,16 +27,21 @@ func main() {
 	println("\n-- List ---")
 	obj, _ := blob.NewJsonObject("test")
 	l := locks.WithLockSupport(b)
-	listItems(l, obj)
 	storeItem(l, obj, "one", "Hello one!")
 	loadItem(l, obj, "one")
 	storeItem(l, obj, "two", "Hello two!")
 	loadItem(l, obj, "two")
+	storeItem(l, obj, "a", map[string]any{"b": map[string]any{"c": "Woho?"}})
+	loadItem(l, obj, "a.b.c")
+	storeItem(l, obj, "a.b.c", "Woho!")
+	loadItem(l, obj, "a.b.c")
 	listItems(l, obj)
 	removeItem(l, obj, "two")
+	removeItem(l, obj, "a.b.c")
 	loadItem(l, obj, "two")
 	listItems(l, obj)
 	removeItem(l, obj, "one")
+	removeItem(l, obj, "a")
 
 	println("\n-- Back in files ---")
 	listFiles(b, "/")
@@ -107,7 +113,27 @@ func removeFile(store blob.BlobStore, fileName string) {
 }
 
 func listItems(store locks.LockSupport, object blob.Object) {
-	items, _ := kv.List(store, object)
+	data, err := store.Read(object)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	bs, err := io.ReadAll(data)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	items := make(map[string]any)
+	err = json.Unmarshal(bs, &items)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
 
 	for k, v := range items {
 		fmt.Printf("%s=%v\n", k, v)
@@ -115,7 +141,7 @@ func listItems(store locks.LockSupport, object blob.Object) {
 }
 
 func storeItem(store locks.LockSupport, object blob.Object, key string, value any) {
-	err := kv.Store(store, object, key, value)
+	err := kv.PatchKey(store, object, key, value)
 
 	if err != nil {
 		println(err.Error())
@@ -124,7 +150,7 @@ func storeItem(store locks.LockSupport, object blob.Object, key string, value an
 }
 
 func removeItem(store locks.LockSupport, object blob.Object, key string) {
-	err := kv.Remove(store, object, key)
+	err := kv.RemoveKey(store, object, key)
 
 	if err != nil {
 		println(err.Error())
@@ -133,7 +159,7 @@ func removeItem(store locks.LockSupport, object blob.Object, key string) {
 }
 
 func loadItem(store locks.LockSupport, object blob.Object, key string) {
-	item, err := kv.Load(store, object, key)
+	item, err := kv.LoadKey(store, object, key)
 
 	if err != nil {
 		println(err.Error())
