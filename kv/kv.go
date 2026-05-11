@@ -27,7 +27,7 @@ func PatchKey(blobStore locks.LockSupport, obj blob.Object, key string, value an
 				data[key] = value
 			}
 		})
-	})
+	}, "")
 }
 
 func RemoveKey(blobStore locks.LockSupport, obj blob.Object, key string) error {
@@ -41,7 +41,7 @@ func RemoveKey(blobStore locks.LockSupport, obj blob.Object, key string) error {
 				delete(data, key)
 			}
 		})
-	})
+	}, "")
 }
 
 func LoadKey(blobStore locks.LockSupport, obj blob.Object, key string) (any, error) {
@@ -57,7 +57,7 @@ func LoadKey(blobStore locks.LockSupport, obj blob.Object, key string) (any, err
 				item = data[key]
 			}
 		})
-	})
+	}, "")
 
 	return item, err
 }

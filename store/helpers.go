@@ -9,15 +9,19 @@ import (
 	"github.com/Meduzz/minne/locks"
 )
 
-func MutateObject(store locks.LockSupport, obj blob.Object, cb MutateObjectCallback) error {
+func MutateObject(store locks.LockSupport, obj blob.Object, cb MutateObjectCallback, blank string) error {
 	store.Lock(obj)
 	defer store.Unlock(obj)
 
 	stream, err := store.Read(obj)
 
 	if err != nil {
+		if blank == "" {
+			blank = "{}"
+		}
+
 		if errors.Is(err, os.ErrNotExist) {
-			stream = bytes.NewReader([]byte("{}"))
+			stream = bytes.NewReader([]byte(blank))
 		} else {
 			return err
 		}
@@ -35,12 +39,16 @@ func MutateObject(store locks.LockSupport, obj blob.Object, cb MutateObjectCallb
 	return nil
 }
 
-func ReadObject(store locks.LockSupport, obj blob.Object, cb ReadObjectCallback) error {
+func ReadObject(store locks.LockSupport, obj blob.Object, cb ReadObjectCallback, blank string) error {
 	stream, err := store.Read(obj)
 
 	if err != nil {
+		if blank == "" {
+			blank = "{}"
+		}
+
 		if errors.Is(err, os.ErrNotExist) {
-			stream = bytes.NewReader([]byte("{}"))
+			stream = bytes.NewReader([]byte(blank))
 		} else {
 			return err
 		}

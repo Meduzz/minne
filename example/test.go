@@ -9,6 +9,7 @@ import (
 
 	"github.com/Meduzz/helper/fp/slice"
 	"github.com/Meduzz/minne/blob"
+	"github.com/Meduzz/minne/document"
 	"github.com/Meduzz/minne/kv"
 	"github.com/Meduzz/minne/locks"
 	"github.com/spf13/afero"
@@ -42,6 +43,20 @@ func main() {
 	listItems(l, obj)
 	removeItem(l, obj, "one")
 	removeItem(l, obj, "a")
+
+	println("\n--- Docs ---")
+	doc, _ := blob.NewJsonObject("doc")
+	setup(l, doc)
+	searchDoc(l, doc, map[string]string{}, 0, 15)
+	updateDoc(l, doc, 4, map[string]any{
+		"id":    4,
+		"name":  "Row 4",
+		"value": 0,
+		"bonus": "Update",
+	})
+	readDoc(l, doc, 4)
+	removeDoc(l, doc, 9)
+	searchDoc(l, doc, map[string]string{}, 0, 15)
 
 	println("\n-- Back in files ---")
 	listFiles(b, "/")
@@ -167,4 +182,70 @@ func loadItem(store locks.LockSupport, object blob.Object, key string) {
 	}
 
 	fmt.Printf("%v\n", item)
+}
+
+func setup(store locks.LockSupport, object blob.Object) {
+	if object == "" {
+		println("no object")
+	}
+
+	i := 0
+	for i < 10 {
+		data := map[string]any{
+			"id":    i,
+			"name":  fmt.Sprintf("Row %d", i),
+			"value": i % 2,
+		}
+
+		err := document.Create(store, object, data)
+
+		if err != nil {
+			println(err.Error())
+			os.Exit(1)
+		}
+
+		i++
+	}
+}
+
+func searchDoc(store locks.LockSupport, object blob.Object, filter map[string]string, skip, take int) {
+	result, err := document.List(store, object, filter, skip, take)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	slice.ForEach(result, func(it map[string]any) {
+		fmt.Printf("%v\n", it)
+	})
+}
+
+func updateDoc(store locks.LockSupport, object blob.Object, id int, val map[string]any) {
+	err := document.Update(store, object, "id", id, val)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+}
+
+func readDoc(store locks.LockSupport, object blob.Object, id int) {
+	item, err := document.Read(store, object, "id", id)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Printf("%v\n", item)
+}
+
+func removeDoc(store locks.LockSupport, object blob.Object, id int) {
+	err := document.Delete(store, object, "id", id)
+
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
 }
