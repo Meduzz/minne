@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/Meduzz/helper/fp"
@@ -114,6 +115,12 @@ func (b *blobStore) Read(obj Object) (io.Reader, error) {
 }
 
 func (b *blobStore) Store(obj Object, data io.Reader) (int64, error) {
+	err := b.assertDir(obj.File())
+
+	if err != nil {
+		return 0, err
+	}
+
 	file, err := b.options.FS.OpenFile(obj.File(), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0o644)
 
 	if err != nil {
@@ -126,6 +133,12 @@ func (b *blobStore) Store(obj Object, data io.Reader) (int64, error) {
 }
 
 func (b *blobStore) Append(obj Object, data io.Reader) (int64, error) {
+	err := b.assertDir(obj.File())
+
+	if err != nil {
+		return 0, err
+	}
+
 	file, err := b.options.FS.OpenFile(obj.File(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
@@ -157,4 +170,18 @@ func (q *Query) Predicate() fp.Predicate[string] {
 	}
 
 	return yes
+}
+
+func (b *blobStore) assertDir(file string) error {
+	anyDir := path.Dir(file)
+
+	if anyDir != "" {
+		err := b.options.FS.MkdirAll(anyDir, 0644)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
