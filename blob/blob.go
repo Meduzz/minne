@@ -176,7 +176,7 @@ func (b *blobStore) assertDir(file string) error {
 	anyDir := path.Dir(file)
 
 	if anyDir != "" {
-		err := b.options.FS.MkdirAll(anyDir, 0644)
+		err := b.options.FS.MkdirAll(anyDir, 0755)
 
 		if err != nil {
 			return err
