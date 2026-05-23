@@ -80,9 +80,9 @@ func Delete(blobStore locks.LockSupport, obj blob.Object, key string, value any)
 					keys := strings.Split(key, ".")
 					edge, k := lens(it, keys)
 
-					return match(edge[k], value)
+					return !match(edge[k], value)
 				} else {
-					return match(it[key], value)
+					return !match(it[key], value)
 				}
 			})
 
@@ -126,8 +126,8 @@ func List(blobStore locks.LockSupport, obj blob.Object, filter map[string]string
 						}
 					}
 
-					return slice.Fold(result, true, func(it, agg bool) bool {
-						if !agg {
+					return slice.Fold(result, false, func(it, agg bool) bool {
+						if agg {
 							return agg
 						} else {
 							return it
